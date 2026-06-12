@@ -2,7 +2,7 @@
   "name": "PolarClaw",
   "_meta": {
     "schema_version": "1.0",
-    "last_synced_at": "2026-06-10T00:00:00+08:00"
+    "last_synced_at": "2026-06-12T12:00:00+08:00"
   },
   "description": "PolarClaw — 个人 AI Agent 融合平台（端口-适配器架构）：多通道交互、LLM 工具调用、隐私网关、YOLO 自主模式。",
   "tier": "app",

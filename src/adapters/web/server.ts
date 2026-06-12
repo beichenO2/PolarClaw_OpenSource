@@ -22,6 +22,18 @@ import {
 
 import type { AgentProgressEvent, IAgentRuntimeOptions } from '../../core/agent.js';
 
+const HUB_WEB_USER = 'hub-user';
+
+function webConvIdToServer(webId: string): string {
+  if (webId.includes(':')) return webId;
+  return `hub:${webId}:${HUB_WEB_USER}`;
+}
+
+function serverConvIdToWeb(serverId: string): string {
+  const m = /^hub:(.+):hub-user$/.exec(serverId);
+  return m?.[1] ?? serverId;
+}
+
 export interface WebServerConfig {
   port: number;
   dataDir: string;
@@ -475,7 +487,12 @@ document.getElementById('send').onclick=async()=>{
     }
     const limit = parseInt(String(_req.query.limit)) || 50;
     const list = config.conversations.listConversations(limit);
-    res.json(list);
+    res.json(list.map(c => ({
+      id: serverConvIdToWeb(c.conversationId),
+      title: (c.preview ?? '对话').slice(0, 48) || '对话',
+      messageCount: c.messageCount,
+      updatedAt: c.lastMessageAt,
+    })));
   });
 
   app.get('/api/conversations/:id', (req, res) => {
@@ -483,14 +500,18 @@ document.getElementById('send').onclick=async()=>{
       return res.json({ messages: [] });
     }
     const limit = parseInt(String(req.query.limit)) || 200;
-    const messages = config.conversations.getHistory(req.params.id, { limit, fromLatest: true });
+    const serverId = webConvIdToServer(req.params.id);
+    const messages = config.conversations.getHistory(serverId, { limit, fromLatest: true });
     res.json({
       conversationId: req.params.id,
-      messages: messages.map(m => ({
-        role: m.role,
-        content: m.content,
-        timestamp: m.timestamp?.toISOString?.() ?? null,
-      })),
+      messages: messages
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .map((m, i) => ({
+          id: `srv_${i}_${m.timestamp?.getTime?.() ?? i}`,
+          role: m.role,
+          content: m.content,
+          timestamp: m.timestamp?.toISOString?.() ?? null,
+        })),
     });
   });
 
@@ -806,7 +827,7 @@ document.getElementById('send').onclick=async()=>{
     app.post('/api/session-memory/:convId/compress', async (req, res) => {
       const convId = req.params.convId;
       try {
-        const compressed = await sm.compressForNextTurn(convId);
+        const compressed = await sm.compressForNextTurn(convId, HUB_WEB_USER);
         const session = sm.getOrCreateSession(convId);
         res.json({
           conversation_id: convId,

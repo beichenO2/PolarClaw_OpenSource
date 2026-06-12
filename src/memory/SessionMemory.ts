@@ -272,7 +272,7 @@ export class SessionMemoryManager {
    *
    * @returns 压缩后的 JSON 字符串，可直接传给 injectFromPrevious
    */
-  async compressForNextTurn(convId: string): Promise<string> {
+  async compressForNextTurn(convId: string, userId?: string): Promise<string> {
     const session = this.getOrCreateSession(convId);
     const messages = session.working;
 
@@ -329,7 +329,51 @@ export class SessionMemoryManager {
     // Persist to SQLite after compression
     try { this.saveSessionToDb(convId); } catch { /* ignore */ }
 
+    // Auto-archive the compressed summary into PolarMemory's long-term store so
+    // conversation memory accumulates across sessions (user-isolated). Only when
+    // a real userId is provided; fire-and-forget so it never blocks the turn.
+    if (userId && userId !== 'anonymous') {
+      void this.archiveToPolarMemory(compressed, convId, userId);
+    }
+
     return result;
+  }
+
+  /**
+   * archiveToPolarMemory — persist a compressed conversation summary as a
+   * long-term Block (source=conversation, user-isolated) so memory accumulates
+   * across sessions ("记忆厚度"). Optional LLM refine via config.summarize.
+   * Fire-and-forget: failures are swallowed since the SQLite episodic store is
+   * the primary record.
+   */
+  private async archiveToPolarMemory(compressed: CompressedMemory, convId: string, userId: string): Promise<void> {
+    try {
+      const raw = compressed.summary?.trim();
+      if (!raw) return;
+      const value = this.summarize ? await this.summarize(raw) : raw;
+      await fetch(`${this.polarMemoryBaseUrl}/api/blocks/upsert`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          block: {
+            label: `conv-${convId}-${compressed.compressedAt}`,
+            value: value.slice(0, 4000),
+            tokens: Math.ceil(value.length / 4),
+            read_only: false,
+            source_wiki: '',
+            created_at: compressed.compressedAt,
+            updated_at: compressed.compressedAt,
+            type: 'context',
+            source: 'conversation',
+            user_id: userId,
+            confidence: 0.7,
+          },
+        }),
+        signal: AbortSignal.timeout(3000),
+      });
+    } catch {
+      // fire-and-forget — never fail the turn on archival
+    }
   }
 
   /**

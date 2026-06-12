@@ -134,6 +134,7 @@ export async function sendAgentChat(opts: {
   conversation_id: string
   message: string
   settings?: ChatAgentSettings
+  signal?: AbortSignal
   onEvent?: (event: AgentStreamEvent) => void
 }): Promise<{ content: string | null; error?: string }> {
   try {
@@ -145,6 +146,7 @@ export async function sendAgentChat(opts: {
         conversation_id: opts.conversation_id,
         settings: opts.settings,
       }),
+      signal: opts.signal,
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({})) as { error?: string }
@@ -183,8 +185,76 @@ export async function sendAgentChat(opts: {
 
     return { content: finalContent }
   } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      return { content: null, error: 'aborted' }
+    }
     return { content: null, error: String(err) }
   }
+}
+
+export interface ServerConversationMeta {
+  id: string
+  title: string
+  messageCount: number
+  updatedAt: string
+}
+
+export interface ServerChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: string | null
+}
+
+export async function fetchServerConversations(): Promise<ServerConversationMeta[]> {
+  try {
+    const res = await fetch('/api/conversations?limit=40')
+    if (!res.ok) return []
+    return await res.json() as ServerConversationMeta[]
+  } catch {
+    return []
+  }
+}
+
+export async function fetchServerMessages(conversationId: string): Promise<ChatMessage[]> {
+  try {
+    const res = await fetch(`/api/conversations/${encodeURIComponent(conversationId)}?limit=200`)
+    if (!res.ok) return []
+    const data = await res.json() as { messages?: ServerChatMessage[] }
+    return (data.messages ?? []).map(m => ({
+      id: m.id,
+      role: m.role,
+      content: m.content,
+    }))
+  } catch {
+    return []
+  }
+}
+
+export function mergeChatMessages(local: ChatMessage[], server: ChatMessage[]): ChatMessage[] {
+  if (server.length === 0) return local
+  if (local.length === 0) return server
+  const serverSigs = new Set(server.map(m => `${m.role}:${m.content.slice(0, 120)}`))
+  const localOnly = local.filter(m => !serverSigs.has(`${m.role}:${m.content.slice(0, 120)}`))
+  return [...server, ...localOnly.filter(m => m.id !== '__streaming__')]
+}
+
+export function mergeConversationLists(
+  local: ConversationMeta[],
+  server: ServerConversationMeta[],
+): ConversationMeta[] {
+  const byId = new Map<string, ConversationMeta>()
+  for (const c of local) byId.set(c.id, c)
+  for (const s of server) {
+    const existing = byId.get(s.id)
+    byId.set(s.id, {
+      id: s.id,
+      title: existing?.title && existing.title !== '新对话' ? existing.title : s.title,
+      workflowId: existing?.workflowId ?? POLARCLAW_DIRECT_ID,
+      updatedAt: s.updatedAt || existing?.updatedAt || new Date().toISOString(),
+    })
+  }
+  return [...byId.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 40)
 }
 
 export function newConversationId(): string {

@@ -2,7 +2,7 @@
  * Auto-generated composite tool: search_then_read
  * 自动生成的组合工具：查询后阅读（knowlever_search → doc_reader）
  *
- * Generated at: 2026-06-12T02:06:32.078Z
+ * Generated at: 2026-06-12T05:03:48.537Z
  */
 
 import type { IToolHandler } from '../../src/ports/tools.js';

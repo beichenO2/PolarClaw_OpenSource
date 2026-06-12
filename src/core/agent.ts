@@ -244,7 +244,7 @@ export function createAgent(config: IAgentConfig, deps: IAgentDeps) {
         if (sessionMemory) {
           const currentHistory = conversations.getHistory(convId);
           sessionMemory.updateWorkingMemory(convId, currentHistory);
-          sessionMemory.compressForNextTurn(convId).catch((err) => {
+          sessionMemory.compressForNextTurn(convId, userId).catch((err) => {
             console.error(`[Agent] session memory compression failed:`, err);
           });
         }

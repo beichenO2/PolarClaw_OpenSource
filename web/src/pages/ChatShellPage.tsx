@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import clsx from 'clsx'
 import { MessageList } from '../components/chat/MessageList'
@@ -13,9 +13,13 @@ import {
   type ChatMessage,
   type ConversationMeta,
   fetchDeployments,
+  fetchServerConversations,
+  fetchServerMessages,
   isDirectAgent,
   loadConversations,
   loadMessages,
+  mergeChatMessages,
+  mergeConversationLists,
   newConversationId,
   POLARCLAW_DIRECT_ID,
   saveConversations,
@@ -64,6 +68,14 @@ export function ChatShellPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [settings, setSettings] = useState<ChatAgentSettings>(() => loadSettings())
 
+  const activeConvRef = useRef(conversationId)
+  const abortRef = useRef<AbortController | null>(null)
+  const pendingByConvRef = useRef<Record<string, boolean>>({})
+
+  useEffect(() => {
+    activeConvRef.current = conversationId
+  }, [conversationId])
+
   useEffect(() => {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings))
   }, [settings])
@@ -76,11 +88,33 @@ export function ChatShellPage() {
   }, [])
 
   useEffect(() => {
+    fetchServerConversations().then(serverList => {
+      if (serverList.length === 0) return
+      setConversations(prev => mergeConversationLists(prev, serverList))
+    })
+    void loadConversationView(conversationId)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only bootstrap
+  }, [])
+
+  useEffect(() => {
     if (routeConvId && routeConvId !== conversationId) {
+      abortInflight()
+      setSending(!!pendingByConvRef.current[routeConvId])
       setConversationId(routeConvId)
-      setMessages(loadMessages(routeConvId))
+      void loadConversationView(routeConvId)
     }
   }, [routeConvId])
+
+  async function loadConversationView(id: string) {
+    const local = loadMessages(id)
+    const server = await fetchServerMessages(id)
+    setMessages(mergeChatMessages(local, server))
+  }
+
+  function abortInflight() {
+    abortRef.current?.abort()
+    abortRef.current = null
+  }
 
   useEffect(() => {
     saveMessages(conversationId, messages)
@@ -99,20 +133,26 @@ export function ChatShellPage() {
   }
 
   function startNewChat(nextWorkflowId?: string) {
+    abortInflight()
     const wf = nextWorkflowId ?? workflowId
     const id = newConversationId()
     setConversationId(id)
+    activeConvRef.current = id
     setMessages([])
     setPendingAnnotations([])
     setInput('')
+    setSending(false)
     if (nextWorkflowId) setWorkflowId(nextWorkflowId)
     navigate(`/chat/${id}${wf ? `?workflow=${encodeURIComponent(wf)}` : ''}`)
   }
 
   function switchConversation(id: string) {
+    abortInflight()
     setConversationId(id)
-    setMessages(loadMessages(id))
+    activeConvRef.current = id
     setPendingAnnotations([])
+    setSending(!!pendingByConvRef.current[id])
+    void loadConversationView(id)
     const conv = conversations.find(c => c.id === id)
     if (conv?.workflowId) setWorkflowId(conv.workflowId)
     navigate(`/chat/${id}`)
@@ -120,7 +160,7 @@ export function ChatShellPage() {
 
   async function handleSend() {
     const text = input.trim()
-    if (!text || !workflowId || sending) return
+    if (!text || !workflowId || pendingByConvRef.current[conversationId]) return
 
     const userMsg: ChatMessage = {
       id: `m_${Date.now()}`,
@@ -131,7 +171,12 @@ export function ChatShellPage() {
     setInput('')
     setPendingAnnotations([])
     persistConversationMeta(text)
-    setSending(true)
+    const convAtStart = conversationId
+    pendingByConvRef.current[convAtStart] = true
+    if (activeConvRef.current === convAtStart) setSending(true)
+
+    const ac = new AbortController()
+    abortRef.current = ac
 
     let content: string | null = null
     let error: string | undefined
@@ -141,6 +186,7 @@ export function ChatShellPage() {
       const steps: string[] = []
       let answer = ''
       const renderStreaming = () => {
+        if (activeConvRef.current !== convAtStart) return
         const body = [steps.join('\n'), answer].filter(Boolean).join(steps.length && answer ? '\n\n' : '')
         setMessages(prev => {
           const streamMsg: ChatMessage = { id: '__streaming__', role: 'assistant', content: body, reasoning }
@@ -150,10 +196,12 @@ export function ChatShellPage() {
         })
       }
       const result = await sendAgentChat({
-        conversation_id: conversationId,
+        conversation_id: convAtStart,
         message: userMsg.content,
         settings,
+        signal: ac.signal,
         onEvent: (evt: AgentStreamEvent) => {
+          if (activeConvRef.current !== convAtStart) return
           if (evt.type === 'reasoning') {
             if (evt.delta) reasoning += evt.delta
           } else if (evt.type === 'content') {
@@ -166,34 +214,42 @@ export function ChatShellPage() {
             const dur = evt.duration_ms ? ` ${evt.duration_ms}ms` : ''
             steps.push(`${icon} → ${(evt.result ?? '').slice(0, 120)}${dur}`)
           } else {
-            // 'thinking'/'done' etc：保持 pending 指示，不创建空气泡
             return
           }
           renderStreaming()
         },
       })
       content = result.content
-      error = result.error
+      error = result.error === 'aborted' ? undefined : result.error
     } else {
       const result = await sendWorkflowChat({
         workflow_id: workflowId,
-        conversation_id: conversationId,
+        conversation_id: convAtStart,
         message: userMsg.content,
       })
       content = result.content
       error = result.error
     }
 
-    setMessages(prev => {
-      const filtered = prev.filter(m => m.id !== '__streaming__')
-      return [...filtered, {
-        id: `m_${Date.now()}_a`,
-        role: 'assistant' as const,
-        content: error ? `错误：${error}` : (content ?? '（无回复）'),
-        reasoning: reasoning.trim() ? reasoning : undefined,
-      }]
-    })
-    setSending(false)
+    pendingByConvRef.current[convAtStart] = false
+    if (abortRef.current === ac) abortRef.current = null
+
+    if (activeConvRef.current === convAtStart) {
+      if (!ac.signal.aborted && error !== 'aborted') {
+        setMessages(prev => {
+          const filtered = prev.filter(m => m.id !== '__streaming__')
+          return [...filtered, {
+            id: `m_${Date.now()}_a`,
+            role: 'assistant' as const,
+            content: error ? `错误：${error}` : (content ?? '（无回复）'),
+            reasoning: reasoning.trim() ? reasoning : undefined,
+          }]
+        })
+      } else if (ac.signal.aborted) {
+        setMessages(prev => prev.filter(m => m.id !== '__streaming__'))
+      }
+      setSending(false)
+    }
   }
 
   function handleAnnotate(_messageId: string, annotation: ChatAnnotation) {
