@@ -97,16 +97,19 @@ LLM 偶尔返回不合法 JSON 的 tool_call arguments（如 `{}""`、trailing c
 
 ## 页面预览
 
-### Hub Web（多 Agent 调度中心）
+> 截图位于 `screenshots/`，均为本地运行实拍。
 
-![Hub Web — Agent 注册、Prompt 下发、状态监控](screenshots/claw-04-hub-web.png)
+### Hub Web（PolarCopilot 调度中心）
+
+![Hub Agent Control — Prompt 下发与 Agent 状态](screenshots/claw-01-hub-agent-control.png)
+
+![Start Agent — 选择 PolarClaw / 模型并启动](screenshots/claw-02-start-agent.png)
 
 ### Web UI（独立 Agent 界面）
 
-![Chat — 类 ChatGPT 对话界面，支持 Agent/Workflow 切换](screenshots/claw-05-chat.png)
-![Dashboard — Agent 状态总览（通道/技能/记忆/YOLO）](screenshots/claw-01-dashboard.png)
-![YOLO 自主执行 — 目标输入 + 对齐验证 + 预算控制](screenshots/claw-02-yolo.png)
-![Review — PDF/PPT 文件审阅与批注](screenshots/claw-03-review.png)
+![Chat — 流式对话与 Skill 激活](screenshots/claw-03-chat.png)
+
+![Agent 扫描 — 实际文件系统结构汇总](screenshots/claw-04-agent-scan.png)
 
 ## 架构
 
