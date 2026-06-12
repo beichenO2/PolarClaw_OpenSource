@@ -1,0 +1,46 @@
+{
+  "name": "polarclaw",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "description": "PolarClaw — AI Agent 融合平台（端口-适配器架构）",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "feishu:simulate": "tsx src/adapters/channel/feishu-simulate.ts",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@larksuiteoapi/node-sdk": "^1.60.0",
+    "better-sqlite3": "^12.10.0",
+    "eventsource": "^4.1.0",
+    "express": "^5.2.1",
+    "multer": "^2.1.1"
+  },
+  "optionalDependencies": {
+    "@browserbasehq/stagehand": "^3.3.0",
+    "playwright": "^1.59.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/eventsource": "^1.1.15",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.1.0",
+    "@types/node": "^25.6.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "eslint": "^10.2.1",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2",
+    "typescript-eslint": "^8.58.2",
+    "vitest": "^4.1.4"
+  }
+}

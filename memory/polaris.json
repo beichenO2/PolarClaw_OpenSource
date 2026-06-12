@@ -1,0 +1,175 @@
+{
+  "name": "PolarMemory",
+  "_meta": {
+    "schema_version": "1.0",
+    "last_synced_at": "2026-06-10T00:00:00+08:00"
+  },
+  "description": "Agent 长期记忆模块：将 KnowLever Wiki 转换为高密度 Block 格式，提供 Agent 消费接口",
+  "tier": "memory",
+  "status": "active",
+  "version": "0.1.0",
+  "requirements": [
+    {
+      "id": "R1",
+      "need": "Wiki→Block 转换与 Block 管理",
+      "approach": "wiki_converter 读取 KnowLever Wiki 目录，解析 YAML frontmatter + Markdown，压缩为高密度 Block；BlockManager 提供 wikiToBlock/batchConvert/rankByImportance/sync 方法",
+      "features": [
+        {
+          "name": "Block 数据结构",
+          "description": "label/value/tokens/read_only/source_wiki/created_at/updated_at 七字段结构",
+          "status": "done",
+          "behavior": [
+            "Block 接口定义：label, value, tokens, read_only, source_wiki, created_at, updated_at",
+            "read_only 根据源 Wiki 的 status=done 或 confidence>=0.9 自动标记",
+            "tokens 按 value 长度/4 估算",
+            "Block 支持 13 种 type（entity/preference/fact/goal/relationship/event/concept/procedure/emotion/decision/skill/context/meta），新增 temporal/confidence/source/entity_refs 可选字段"
+          ],
+          "test_status": "passed",
+          "evidence": [
+            "2026-06-10: feature verified in codebase (L2 gate audit backfill)"
+          ]
+        },
+        {
+          "name": "Wiki→Block 转换器",
+          "description": "读取 KnowLever Wiki 目录，解析 frontmatter + body，压缩为 Block",
+          "status": "done",
+          "behavior": [
+            "解析 YAML frontmatter 提取 id/title/summary/confidence/tags 等元数据",
+            "压缩 body：移除标题行，合并正文为单行高密度文本",
+            "递归扫描 wiki/ 目录下所有 .md 文件"
+          ],
+          "test_status": "passed",
+          "evidence": [
+            "2026-06-10: feature verified in codebase (L2 gate audit backfill)"
+          ]
+        },
+        {
+          "name": "BlockManager",
+          "description": "Block 生命周期管理：转换、批量转换、重要性排序、同步",
+          "status": "done",
+          "behavior": [
+            "wikiToBlock(user, topic) 从 KnowLever Wiki 转换为 Block",
+            "batchConvert(user, topics[]) 批量转换多个 topic",
+            "rankByImportance(query, topK) 按关键词匹配度排序",
+            "sync(user, topic) 增量同步，返回 added/updated 计数",
+            "JSON 文件持久化到 data/ 目录"
+          ],
+          "test_status": "passed",
+          "evidence": [
+            "2026-06-10: feature verified in codebase (L2 gate audit backfill)"
+          ]
+        }
+      ],
+      "blockers": []
+    },
+    {
+      "id": "R2",
+      "need": "Agent 消费 API 接口",
+      "approach": "Express HTTP 服务，提供 /api/blocks/search、/api/blocks/convert、/api/blocks/sync 三个端点",
+      "features": [
+        {
+          "name": "/api/blocks/search",
+          "description": "Block 检索接口，供 PolarClaw 调用获取长期记忆",
+          "status": "done",
+          "behavior": [
+            "POST /api/blocks/search 接受 { query, top_k? } 参数",
+            "返回 { blocks: Block[], total, query } 格式",
+            "按关键词匹配度 + read_only 加权排序"
+          ],
+          "test_status": "tested",
+          "evidence": [
+            "2026-06-10: feature verified in codebase (L2 gate audit backfill)"
+          ]
+        },
+        {
+          "name": "/api/blocks/convert",
+          "description": "触发 Wiki→Block 转换",
+          "status": "done",
+          "behavior": [
+            "POST /api/blocks/convert 接受 { user, topic } 参数",
+            "返回 { blocks: Block[], count } 格式"
+          ],
+          "test_status": "tested",
+          "evidence": [
+            "2026-06-10: feature verified in codebase (L2 gate audit backfill)"
+          ]
+        },
+        {
+          "name": "/api/blocks/sync",
+          "description": "与 KnowLever Wiki 增量同步",
+          "status": "done",
+          "behavior": [
+            "POST /api/blocks/sync 接受 { user, topic } 参数",
+            "返回 { synced, added, updated } 格式"
+          ],
+          "test_status": "tested",
+          "evidence": [
+            "2026-06-10: feature verified in codebase (L2 gate audit backfill)"
+          ]
+        }
+      ],
+      "blockers": []
+    },
+    {
+      "id": "R3",
+      "need": "Typed Block + Temporal Validity + Conflict Detection",
+      "approach": "扩展 Block 接口（13 种 type schema），新增 temporal 时间维度字段，实现 detectConflicts 冲突检测方法，新增 upsert/delete/get API 端点",
+      "features": [
+        {
+          "name": "Block typed schema",
+          "status": "done",
+          "test_status": "passed",
+          "behavior": [
+            "Block 支持 13 种 type（entity/preference/fact/goal/relationship/event/concept/procedure/emotion/decision/skill/context/meta）",
+            "Block 新增 temporal/confidence/source/entity_refs 可选字段",
+            "search 支持按 type 过滤和 temporal_valid 检查"
+          ],
+          "evidence": [
+            "2026-06-10: feature verified in codebase (L2 gate audit backfill)"
+          ]
+        },
+        {
+          "name": "Conflict detection",
+          "status": "done",
+          "test_status": "passed",
+          "behavior": [
+            "detectConflicts 方法检测 contradiction/staleness/ambiguity 三类冲突",
+            "upsert API 自动触发冲突检测并返回 conflicts 数组"
+          ],
+          "evidence": [
+            "2026-06-10: feature verified in codebase (L2 gate audit backfill)"
+          ]
+        },
+        {
+          "name": "Block CRUD API",
+          "status": "done",
+          "test_status": "passed",
+          "behavior": [
+            "POST /api/blocks/upsert 创建或更新 Block",
+            "POST /api/blocks/delete 删除 Block",
+            "GET /api/blocks/:label 获取单个 Block"
+          ],
+          "evidence": [
+            "2026-06-10: feature verified in codebase (L2 gate audit backfill)"
+          ]
+        }
+      ],
+      "blockers": []
+    }
+  ],
+  "tech": {
+    "runtime": {
+      "node": ">=18"
+    },
+    "backend": "Express + TypeScript",
+    "storage": "文件系统 JSON（data/blocks.json + data/sync_meta.json）",
+    "test": "ts-node + curl"
+  },
+  "depends_on": [
+    "KnowLever Wiki 产物（只读 data/users/{user}/topics/{topic}/wiki/）"
+  ],
+  "contacts": {
+    "last_updated": "2026-05-11",
+    "updated_by": "astron-code-subagent"
+  }
+}

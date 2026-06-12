@@ -1,0 +1,173 @@
+{
+  "project": "PolarClaw",
+  "version": "0.2.0",
+  "capabilities": [
+    {
+      "id": "polarclaw.feishu.webhook",
+      "service_name": "polarclaw-feishu-default",
+      "description": "飞书消息 Webhook 接收器，桥接消息到 Agent 核心",
+      "transport": "http",
+      "endpoint": "/feishu/events",
+      "method": "POST",
+      "idempotent": false,
+      "side_effects": true,
+      "timeout_ms": 10000
+    },
+    {
+      "id": "polarclaw.ecosystem.status",
+      "service_name": "polarclaw-agent",
+      "description": "生态系统健康检查 — 检查 digist + KnowLever + 端口注册状态",
+      "transport": "skill",
+      "tool_name": "ecosystem_status",
+      "idempotent": true,
+      "side_effects": false,
+      "timeout_ms": 15000
+    },
+    {
+      "id": "polarclaw.ecosystem.sync_digest",
+      "service_name": "polarclaw-agent",
+      "description": "触发 digist → KnowLever 内容同步管道",
+      "transport": "skill",
+      "tool_name": "ecosystem_sync_digest",
+      "idempotent": false,
+      "side_effects": true,
+      "timeout_ms": 60000
+    },
+    {
+      "id": "polarclaw.ecosystem.discover_and_learn",
+      "service_name": "polarclaw-agent",
+      "description": "完整流水线：爬取新信息 → 同步知识库 → 编译结构化知识",
+      "transport": "skill",
+      "tool_name": "ecosystem_discover_and_learn",
+      "idempotent": false,
+      "side_effects": true,
+      "timeout_ms": 300000
+    },
+    {
+      "id": "polarclaw.ecosystem.unified_search",
+      "service_name": "polarclaw-agent",
+      "description": "统一搜索 — 同时查询 digist 原始数据 + KnowLever 结构化知识",
+      "transport": "skill",
+      "tool_name": "ecosystem_unified_search",
+      "idempotent": true,
+      "side_effects": false,
+      "timeout_ms": 20000
+    },
+    {
+      "id": "polarclaw.skill.knowlever",
+      "service_name": "polarclaw-agent",
+      "description": "KnowLever 知识检索与编译技能（RAG 查询、Topic 管理、代码摄入）",
+      "transport": "skill",
+      "tool_name": "knowlever_query",
+      "idempotent": true,
+      "side_effects": false,
+      "timeout_ms": 15000
+    },
+    {
+      "id": "polarclaw.skill.digist",
+      "service_name": "polarclaw-agent",
+      "description": "digist 信息采集技能（爬取触发、数据搜索、推荐）",
+      "transport": "skill",
+      "tool_name": "digist_crawl",
+      "idempotent": false,
+      "side_effects": true,
+      "timeout_ms": 60000
+    },
+    {
+      "id": "polarclaw.skill.lab_report",
+      "service_name": "polarclaw-agent",
+      "description": "实验报告自动生成 — LLM 驱动内容生成 + officecli 文档构建",
+      "transport": "skill",
+      "tool_name": "lab_report_generate",
+      "idempotent": false,
+      "side_effects": true,
+      "timeout_ms": 300000
+    },
+    {
+      "id": "polarclaw.skill.lab_report_preview",
+      "service_name": "polarclaw-agent",
+      "description": "实验报告内容预览 — 仅 LLM 生成各章节文本，不构建文档",
+      "transport": "skill",
+      "tool_name": "lab_report_preview",
+      "idempotent": true,
+      "side_effects": false,
+      "timeout_ms": 180000
+    },
+    {
+      "id": "polarclaw.skill.lab_report_health",
+      "service_name": "polarclaw-agent",
+      "description": "实验报告 Skill 健康检查（officecli + LLM Proxy 连通性）",
+      "transport": "skill",
+      "tool_name": "lab_report_health",
+      "idempotent": true,
+      "side_effects": false,
+      "timeout_ms": 10000
+    },
+    {
+      "id": "polarclaw.sdk.users.resolve",
+      "service_name": "polarclaw-web",
+      "description": "解析 PolarUser 身份（human/project），返回脱敏用户信息",
+      "transport": "http",
+      "endpoint": "/api/sdk/users/:id",
+      "method": "GET",
+      "idempotent": true,
+      "side_effects": false,
+      "timeout_ms": 5000
+    },
+    {
+      "id": "polarclaw.sdk.events.proxy",
+      "service_name": "polarclaw-web",
+      "description": "龙虾事件代理 — 通过 PolarPilot contract 转发事件（PolarClaw 不直接写入 SOTAgent）",
+      "transport": "http",
+      "endpoint": "/api/sdk/events",
+      "method": "POST",
+      "idempotent": false,
+      "side_effects": true,
+      "timeout_ms": 10000,
+      "contract": "polarpilot-events"
+    },
+    {
+      "id": "polarclaw.sdk.targets.proxy",
+      "service_name": "polarclaw-web",
+      "description": "靶子查询代理 — 通过 PolarPilot contract 代理 CRUD（PolarClaw 不直接读写靶子文件）",
+      "transport": "http",
+      "endpoint": "/api/sdk/targets/:projectId",
+      "method": "GET",
+      "idempotent": true,
+      "side_effects": false,
+      "timeout_ms": 10000,
+      "contract": "polarpilot-targets"
+    },
+    {
+      "id": "polarclaw.pilot.query",
+      "service_name": "polarclaw-web",
+      "description": "PolarPilot 状态查询 — 通过 contract 查询项目龙虾状态，PolarClaw 仅展示不执行",
+      "transport": "http-proxy",
+      "upstream": "POLARPILOT_URL/api/pilot/status/:projectId",
+      "idempotent": true,
+      "side_effects": false,
+      "timeout_ms": 5000,
+      "contract": "polarpilot-status"
+    },
+    {
+      "id": "polarclaw.design.resolve",
+      "service_name": "polarclaw-agent",
+      "description": "设计系统风格解析 — 根据关键词匹配 PolarDesign 设计系统候选列表",
+      "transport": "skill",
+      "tool_name": "design_resolve",
+      "idempotent": true,
+      "side_effects": false,
+      "timeout_ms": 10000
+    },
+    {
+      "id": "polarclaw.design.generate",
+      "service_name": "polarclaw-agent",
+      "description": "HTML 工件生成 — 按 Skill + 设计系统生成 HTML 工件上下文",
+      "transport": "skill",
+      "tool_name": "design_generate",
+      "idempotent": false,
+      "side_effects": true,
+      "timeout_ms": 60000
+    }
+  ]
+}

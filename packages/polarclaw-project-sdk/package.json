@@ -1,0 +1,29 @@
+{
+  "name": "polarclaw-project-sdk",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Thin HTTP client for PolarClaw SDK — used by managed Polarisor projects",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "license": "UNLICENSED"
+}

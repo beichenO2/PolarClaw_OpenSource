@@ -1,0 +1,29 @@
+{
+  "name": "polarmemory",
+  "version": "0.1.0",
+  "main": "dist/api_server.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "start": "npx tsx src/api_server.ts",
+    "test": "npx tsx tests/block_manager.test.ts",
+    "build": "npx tsc"
+  },
+  "keywords": [
+    "polarisor",
+    "memory",
+    "agent"
+  ],
+  "author": "Polarisor",
+  "license": "ISC",
+  "description": "Agent 长期记忆模块：Wiki→Block 转换与检索服务",
+  "dependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.2",
+    "express": "^5.2.1",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  }
+}

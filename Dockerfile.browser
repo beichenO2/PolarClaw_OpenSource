@@ -1,0 +1,73 @@
+# Dockerfile.browser — PolarClaw with isolated Chromium for ComputerUse skill
+#
+# Build:
+#   docker build -f Dockerfile.browser -t polarclaw-browser .
+#
+# Run (one-shot SDK server with browser available):
+#   docker run --rm -p 3910:3910 \
+#     -v $(pwd)/data:/app/data \
+#     -v $(pwd)/.env:/app/.env:ro \
+#     -e COMPUTER_USE_DOCKER=1 \
+#     polarclaw-browser
+#
+# This image purpose:
+#   1. Provide a ready-to-run Chromium + Xvfb sandbox for the
+#      ComputerUse skill (stagehand) so the host desktop is never
+#      touched by browser automation.
+#   2. Be the canonical deployment surface when other Polarisor
+#      projects want to call ComputerUse via the PolarClaw SDK.
+#
+# Sandbox-external services (PolarPilot/PolarPrivate) are reached over
+# host networking; pass POLARPILOT_URL / POLARPRIVATE_URL via -e.
+
+# Microsoft Playwright image bundles Chromium + system deps + Xvfb.
+# Pin to the same playwright minor as the optional dep in package.json
+# so npm install never has to re-download a different browser channel.
+FROM mcr.microsoft.com/playwright:v1.59.1-noble
+
+WORKDIR /app
+
+# System tooling required by better-sqlite3 native build.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      python3 \
+      build-essential \
+      ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+# Install dependencies first so layers cache across source changes.
+COPY package.json package-lock.json ./
+COPY packages/polarclaw-project-sdk/package.json packages/polarclaw-project-sdk/package.json
+RUN npm ci --include=optional
+
+# Copy source, skills, contracts, schemas; everything PolarClaw needs
+# at runtime. .dockerignore should exclude data/, dist/, node_modules/
+# from the host context to keep the image small.
+COPY tsconfig.json eslint.config.js vitest.config.ts ./
+COPY src ./src
+COPY skills ./skills
+COPY personas ./personas
+COPY contracts ./contracts
+COPY lobster-schema ./lobster-schema
+COPY scripts ./scripts
+COPY web ./web
+COPY SOUL.md README.md ./
+
+RUN npm run build
+
+# Persist screenshots + sqlite under volume mount.
+RUN mkdir -p /app/data/screenshots
+
+# Mark the runtime as already isolated; ComputerUse tools key off this
+# variable to skip any host->docker spawn logic and just run stagehand
+# in-process here.
+ENV COMPUTER_USE_DOCKER=1
+ENV NODE_ENV=production
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+# Expose only the Web/SDK port. Feishu callbacks would still go through
+# the host PolarClaw or via reverse proxy.
+EXPOSE 3910
+
+# Default: launch the same entrypoint as bare-metal PolarClaw.
+CMD ["node", "dist/main.js"]

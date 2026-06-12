@@ -1,0 +1,100 @@
+{
+  "project": "PolarMemory",
+  "version": "0.1.0",
+  "capabilities": [
+    {
+      "id": "polarmemory.blocks.search",
+      "service_name": "polarmemory-api",
+      "description": "搜索 Agent 长期记忆 Block，按关键词匹配度排序返回",
+      "transport": "http",
+      "endpoint": "/api/blocks/search",
+      "method": "POST",
+      "input_schema": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": { "type": "string", "description": "搜索关键词" },
+          "top_k": { "type": "integer", "default": 10, "description": "返回数量上限" }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "blocks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": { "type": "string" },
+                "value": { "type": "string" },
+                "tokens": { "type": "number" },
+                "read_only": { "type": "boolean" },
+                "source_wiki": { "type": "string" },
+                "created_at": { "type": "string" },
+                "updated_at": { "type": "string" }
+              }
+            }
+          },
+          "total": { "type": "integer" },
+          "query": { "type": "string" }
+        }
+      },
+      "idempotent": true,
+      "side_effects": false,
+      "timeout_ms": 5000
+    },
+    {
+      "id": "polarmemory.blocks.convert",
+      "service_name": "polarmemory-api",
+      "description": "触发 KnowLever Wiki → Block 转换",
+      "transport": "http",
+      "endpoint": "/api/blocks/convert",
+      "method": "POST",
+      "input_schema": {
+        "type": "object",
+        "required": ["user", "topic"],
+        "properties": {
+          "user": { "type": "string", "description": "KnowLever 用户 ID" },
+          "topic": { "type": "string", "description": "Topic 名称" }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "blocks": { "type": "array" },
+          "count": { "type": "integer" }
+        }
+      },
+      "idempotent": true,
+      "side_effects": true,
+      "timeout_ms": 30000
+    },
+    {
+      "id": "polarmemory.blocks.sync",
+      "service_name": "polarmemory-api",
+      "description": "与 KnowLever Wiki 增量同步 Block 数据",
+      "transport": "http",
+      "endpoint": "/api/blocks/sync",
+      "method": "POST",
+      "input_schema": {
+        "type": "object",
+        "required": ["user", "topic"],
+        "properties": {
+          "user": { "type": "string", "description": "KnowLever 用户 ID" },
+          "topic": { "type": "string", "description": "Topic 名称" }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "synced": { "type": "integer" },
+          "added": { "type": "integer" },
+          "updated": { "type": "integer" }
+        }
+      },
+      "idempotent": false,
+      "side_effects": true,
+      "timeout_ms": 30000
+    }
+  ]
+}

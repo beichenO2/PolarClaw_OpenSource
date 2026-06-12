@@ -1,0 +1,12 @@
+{
+  "idleTopicThresholdMs": 1800000,
+  "longWorkTopicThresholdMs": 10800000,
+  "topicSuggestions": [
+    "讨论一个技术方向或架构决策",
+    "分享一个最近发现的有趣概念",
+    "聊聊对未来项目演进的想法",
+    "回顾一下最近完成的工作亮点",
+    "探讨一个值得深入研究的问题"
+  ],
+  "enableKnowLeverTopics": true
+}
