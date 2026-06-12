@@ -1,7 +1,7 @@
 {
-  "capture_id": "lc-mqabdflz",
-  "ts": "2026-06-12T02:35:15.143Z",
+  "capture_id": "lc-mqacha4y",
+  "ts": "2026-06-12T03:06:14.290Z",
   "jsonl_path": "PolarClaw/.data/learning-captures.jsonl",
-  "store_size": 1426,
+  "store_size": 1427,
   "pending_self_learning_cycle": true
 }

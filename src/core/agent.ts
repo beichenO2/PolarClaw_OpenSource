@@ -320,6 +320,7 @@ export function createAgent(config: IAgentConfig, deps: IAgentDeps) {
   ): Promise<{ text: string; usage?: ILLMResponse['usage']; model?: string }> {
     let totalUsage: NonNullable<ILLMResponse['usage']> | undefined;
     let lastModel = '';
+    let emptyNudges = 0;
 
     // Track repeated futile tool calls to prevent search loops
     const futileCallCounts = new Map<string, number>();
@@ -463,8 +464,24 @@ export function createAgent(config: IAgentConfig, deps: IAgentDeps) {
       });
 
       if (response.toolCalls.length === 0) {
-        const rawContent = response.content?.trim() || '（暂无文本回复）';
-        const text = rawContent.replace(/<think>[\s\S]*?<\/think>\s*/g, '').trim() || rawContent;
+        const cleaned = (response.content ?? '').replace(/<think>[\s\S]*?<\/think>\s*/g, '').trim();
+
+        // 空收尾守卫：模型既没调用工具、又没产出内容（常见于某次工具调用失败后
+        // 直接放弃）。不要把"（暂无文本回复）"当最终结果——注入一次恢复提示，
+        // 逼它用已有信息把活干完，再继续一轮。最多兜底一次，避免死循环。
+        if (!cleaned && emptyNudges < 1) {
+          emptyNudges++;
+          conversations.append(convId, {
+            role: 'system',
+            content: '[SYSTEM] 你上一轮没有产出任何内容。请立刻基于已获取的信息直接给出最终结果/报告；'
+              + '若某个工具不可用或调用失败，就改用其它可用工具或你已掌握的信息尽力完成，'
+              + '不要返回空白，也不要只复述计划。',
+          });
+          console.error('[Agent] empty final response — injected recovery nudge, retrying');
+          continue;
+        }
+
+        const text = cleaned || '（暂无文本回复）';
 
         // 模型不再调用工具并给出文本答复 → 视为最终结果。
         // 不再基于"本轮无工具调用"这一文本启发式去逐步推进 contract、注入

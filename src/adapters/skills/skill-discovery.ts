@@ -147,7 +147,12 @@ export function createSkillDiscoveryTools(deps: ISkillDiscoveryDeps): IToolHandl
         };
       }
 
-      const entry = metaIndex.get(name);
+      let entry = metaIndex.get(name);
+      if (!entry) {
+        // 生态技能（skill_search source=ecosystem 返回的 "project/skill" 名）不在
+        // 本地 metaIndex 里——回退扫描生态技能并按 skillDir 加载，避免"搜到却激活不了"。
+        entry = scanEcosystemSkills().find(e => e.name === name);
+      }
       if (!entry) {
         return { ok: false, error: `技能 "${name}" 未在索引中找到，请先用 skill_search 搜索` };
       }
