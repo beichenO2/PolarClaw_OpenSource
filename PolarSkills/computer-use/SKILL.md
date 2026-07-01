@@ -1,68 +1,58 @@
 ---
 name: computer-use
-description: 浏览器自动化技能 — 通过 Stagehand（Playwright AI 层）执行自然语言驱动的浏览器操作，支持 Docker 隔离运行
-version: 0.2.0
+description: 浏览器自动化技能 — 通过 macOS Safari AppleScript 执行页面读取与表单操作，复用用户登录态；不使用 Chrome/Chromium/Playwright
+version: 0.3.0
 requires:
   node: ">=20"
+  os: darwin
 ---
 
-# ComputerUse — 浏览器自动化技能
+# ComputerUse — Safari 浏览器自动化
 
-通过 Stagehand（Playwright 上层 AI 框架）实现浏览器自动化操作。
-支持在隔离 Docker 环境中运行，不影响用户桌面。
+通过 **Safari AppleScript** 实现浏览器自动化，复用用户已在 Safari 中登录的会话。
+**不使用** Chrome、Chromium、Playwright、Stagehand、bb-browser CDP。
 
 ## 工具列表
 
-- `computer_use_browse` — 自然语言驱动的浏览器操作（导航、点击、填写）
-- `computer_use_screenshot` — 页面截图 + 可选 observe（Stagehand accessibility tree）或 analyze（本地 VLM）
-- `computer_use_fill_form` — 结构化表单自动填写
+- `computer_use_browse` — 打开 URL 并返回页面文本 + 可选快照
+- `computer_use_screenshot` — 抓取页面文本快照 + 可选 VLM 分析
+- `computer_use_fill_form` — 按字段描述填写表单（Safari JS）
 
 ## 调用时机
 
-- 需要打开网页并进行交互（点击、填写、滚动）→ `computer_use_browse`
-- 需要对页面截图后 VLM 视觉分析 / UI 评分 → `computer_use_screenshot` with `analyze: true`
+- 需要读取登录后页面（飞书 wiki、内网等）→ `computer_use_screenshot`
 - 需要批量填写带描述字段的表单 → `computer_use_fill_form`
+- 需要打开 URL 并获取正文 → `computer_use_browse`
 
-## LLM 路径
+## 前置条件
 
-| 模式 | 用途 | LLM 端点 | 模型 |
-|------|------|----------|------|
-| `observe: true` | Stagehand accessibility tree 文本元素发现 | PolarPrivate proxy (`127.0.0.1:12790`) | qwen3-coder-plus |
-| `analyze: true` | 截图视觉理解 / OCR | PolarPrivate 本地 L101 (`127.0.0.1:12790`) | Ollama VLM（服务端映射） |
+- macOS + Safari
+- Safari → 开发 → **Allow JavaScript from Apple Events**
+- 目标站点已在 Safari 中登录
+
+## 输出
+
+- 页面正文写入 `data/screenshots/cu-*.txt`（文本快照，非 PNG）
+- `page_text` / `page_title` / `page_url` 字段直接可用
 
 ## 依赖
 
-- `@browserbasehq/stagehand` — AI 浏览器自动化框架
-- `playwright` — 底层浏览器引擎
-- Stagehand observe/act 走 PolarPrivate proxy，自动注入 DashScope key，无需外部 API key
-- 本地 VLM 经 PolarPrivate L101 转发至 Ollama（需 Ollama 常驻 + PolarPrivate :12790）
-- Docker（可选）— 用于桌面隔离运行
-
-## 桌面隔离（推荐部署形态）
-
-使用 `Dockerfile.browser` 把整个 PolarClaw 跑在容器里，
-Chromium + Xvfb + Node 进程都在容器内，宿主桌面完全不受影响：
-
-```bash
-docker build -f Dockerfile.browser -t polarclaw-browser .
-docker run --rm -p 3910:3910 \
-  -v $(pwd)/data:/app/data \
-  -v $(pwd)/.env:/app/.env:ro \
-  polarclaw-browser
-```
-
-容器内 `COMPUTER_USE_DOCKER=1` 自动设置，作为"我已在隔离环境中运行"的标记，
-ComputerUse 工具直接走容器内 Stagehand，无需再跨容器调度。
-其他项目通过 `polarclaw-project-sdk` 调用时，请求会到容器内的
-`/api/sdk/computer-use/*` 路由，浏览器操作完全沙箱化。
+- 无 Playwright / Stagehand 依赖
+- 可选 VLM：`analyze: true` 时走 PolarPrivate / Ollama
 
 ## 沙箱外暴露
 
-ComputerUse 同时通过 PolarClaw SDK（`/api/sdk/computer-use/*`）以"沙箱外服务"形式暴露，
-其他项目可使用 `polarclaw-project-sdk` 远程调用，详见 SSOT/interfaces.md。
+ComputerUse 通过 PolarClaw SDK（`/api/sdk/computer-use/*`）暴露，
+其他项目使用 `polarclaw-project-sdk` 远程调用。
 
 ## 安全约束
 
-- 默认 headless 模式，不弹窗
-- 截图保存到 `data/screenshots/`，文件名带时间戳
-- Stagehand 调用失败会捕获并返回 `{ ok: false, error }`，不抛进 ReAct 循环
+- 仅在 macOS 运行；非 darwin 返回 `{ ok: false, error }`
+- 快照保存到 `data/screenshots/`，文件名带时间戳
+- 失败捕获为 `{ ok: false, error }`，不抛进 ReAct 循环
+
+## 已废弃
+
+- Dockerfile.browser / Chromium + Xvfb 容器路径
+- Stagehand + Playwright headless
+- bb-browser + Chrome CDP

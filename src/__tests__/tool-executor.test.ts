@@ -44,7 +44,9 @@ describe('createToolExecutor', () => {
   it('times out slow tools', async () => {
     const executor = createToolExecutor({ timeoutMs: 50 });
     executor.register(makeTool('slow', () => new Promise((r) => setTimeout(r, 500))));
-    await expect(executor.execute('slow', {})).rejects.toThrow('超时');
+    const result = await executor.execute('slow', {});
+    expect(result).toContain('[ToolError]');
+    expect(result).toContain('超时');
   });
 
   it('runs beforeExecute hook', async () => {

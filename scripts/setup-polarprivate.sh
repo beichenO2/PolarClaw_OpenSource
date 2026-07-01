@@ -130,13 +130,13 @@ create_secret "feishu.admin.app_secret"           "feishu"
 create_secret "feishu.admin.verification_token"   "feishu"
 create_secret "feishu.admin.encrypt_key"          "feishu"
 
-# ── 飞书女友 Bot（girlfriend）──────────────────────
+# ── 飞书 PolarClaw_Rr Bot（feishu.rr / @套辞）──────────────────
 log ""
-log "━━━ 飞书女友 Bot ━━━"
-create_secret "feishu.girlfriend.app_id"              "feishu"
-create_secret "feishu.girlfriend.app_secret"           "feishu"
-create_secret "feishu.girlfriend.verification_token"   "feishu"
-create_secret "feishu.girlfriend.encrypt_key"          "feishu"
+log "━━━ 飞书 PolarClaw_Rr Bot（feishu.rr）━━━"
+create_secret "feishu.rr.app_id"              "feishu"
+create_secret "feishu.rr.app_secret"           "feishu"
+create_secret "feishu.rr.verification_token"   "feishu"
+create_secret "feishu.rr.encrypt_key"          "feishu"
 
 # ── LLM API ────────────────────────────────────────
 log ""
@@ -148,8 +148,8 @@ log ""
 log "━━━ 飞书应用信息（Identity）━━━"
 create_identity "feishu.admin.app_name"       "PolarClaw 管理员 Bot"   "feishu"
 create_identity "feishu.admin.webhook_path"   "/webhook/feishu/admin"  "feishu"
-create_identity "feishu.girlfriend.app_name"  "PolarClaw 女友 Bot"    "feishu"
-create_identity "feishu.girlfriend.webhook_path" "/webhook/feishu/girlfriend" "feishu"
+create_identity "feishu.rr.app_name"        "PolarClaw_Rr"           "feishu"
+create_identity "feishu.rr.webhook_path"      "/webhook/feishu/rr"     "feishu"
 
 # ── 完成 ────────────────────────────────────────────
 log ""

@@ -22,15 +22,19 @@ beforeAll(async () => {
     });
   });
   await new Promise<void>((resolve) => {
-    mockServer.listen(12790, '127.0.0.1', () => {
+    mockServer.listen(0, '127.0.0.1', () => {
       const addr = mockServer.address() as { port: number };
       serverPort = addr.port;
+      process.env.POLARPRIVATE_URL = `http://127.0.0.1:${serverPort}`;
       resolve();
     });
   });
 });
 
-afterAll(() => { mockServer.close(); });
+afterAll(() => {
+  delete process.env.POLARPRIVATE_URL;
+  mockServer.close();
+});
 
 describe('createLLMRouter', () => {
   it('routes coding intent to QCSA 0001 (agent)', async () => {

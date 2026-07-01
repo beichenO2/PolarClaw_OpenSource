@@ -163,7 +163,7 @@ export function createPolarClawClient(config: SDKClientConfig) {
     },
 
     // PolarClaw-hosted browser automation. The host PolarClaw container
-    // owns Chromium; the calling project never installs Playwright.
+    // PolarClaw owns Safari browser automation; callers never launch Chrome/Playwright.
     computerUse: {
       browse(input: ComputerUseBrowseInput) {
         return request<ComputerUseBrowseResult>('POST', '/api/sdk/computer-use/browse', input);

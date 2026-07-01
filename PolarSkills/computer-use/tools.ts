@@ -1,7 +1,7 @@
 /**
  * ComputerUse — 浏览器自动化技能工具
  *
- * 真正的 Stagehand 调用集中在 src/sdk/computer-use.ts；本文件只是
+ * 真正的 Safari 调用集中在 src/sdk/computer-use.ts；本文件只是
  * 把 SDK 函数包装成 ReAct ToolHandler 暴露给 PolarClaw 的 Agent 循环，
  * 这样 ReAct 工具调用与外部项目通过 polarclaw-project-sdk 的远程
  * 调用走完全相同的代码路径，行为不会漂移。

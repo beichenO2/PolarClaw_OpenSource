@@ -457,21 +457,16 @@
         },
         {
           "name": "ComputerUse 浏览器自动化",
-          "description": "Stagehand（Playwright AI 层）驱动的浏览器操作；同时通过 PolarClaw SDK 以沙箱外服务形式暴露给其他 Polarisor 项目",
+          "description": "Safari AppleScript 驱动的浏览器操作；通过 PolarClaw SDK 暴露给其他 Polarisor 项目；不使用 Chrome/Chromium/Playwright",
           "status": "done",
           "behavior": [
-            "ReAct skill：computer_use_browse / computer_use_screenshot / computer_use_fill_form 通过 SkillLoader 按需加载（skills/computer-use/），实现统一委托给 src/sdk/computer-use.ts，避免双份 Stagehand 调用漂移",
-            "SDK module：sdk.computerUse.{browse,screenshot,fillForm}（src/sdk/computer-use.ts），HTTP 路由 /api/sdk/computer-use/*",
-            "polarclaw-project-sdk 客户端 sdk.computerUse.* 让其他项目（KnowLever/AutoOffice/PolarPilot 等）通过 HTTP 调用，不必各自安装 Chromium",
-            "桌面隔离：Dockerfile.browser 把整个 PolarClaw 跑在 mcr.microsoft.com/playwright 镜像内，COMPUTER_USE_DOCKER=1 标识",
-            "截图持久化到 data/screenshots/，文件名带时间戳",
-            "Stagehand v3 接口已适配（context.newPage/activePage、page.goto/screenshot、stagehand.act/observe 直接调用）",
-            "@browserbasehq/stagehand + playwright 列为 optionalDependencies，缺失时优雅降级为 ok:false 错误",
-            "LLM 路由默认指向 PolarPrivate /v1，并注入自定义 AISdkClient 强制走 chat-completions（非 responses）；COMPUTER_USE_LLM_BASE_URL / COMPUTER_USE_LLM_API_KEY / COMPUTER_USE_MODEL_NAME 三级 env 覆盖，无需外部 OPENAI_API_KEY",
-            "Smoke test：本机 chromium 1217 已 install 并通过截图 smoke（example.com goto + screenshot 成功落盘），证明 stagehand v3 接口+optionalDependency+sandbox external 路径整体可用",
-            "模型兼容修复：systemPrompt 强化 JSON 输出约束（显式要求 json 关键词、禁止思维块、禁止 markdown）；compatFetch 增加思维块 + markdown fence 双重剥离后处理",
-            "Docker 运行修复：localBrowserLaunchOptions 增加 --no-sandbox 和 --disable-setuid-sandbox 参数，解决容器内 Chromium CDP 连接问题；polarclaw-browser 镜像已重建",
-            "Smoke test 脚本：scripts/smoke-test-docker.sh 完成容器内 runtime smoke 验证"
+            "ReAct skill：computer_use_browse / computer_use_screenshot / computer_use_fill_form 委托 src/sdk/computer-use.ts",
+            "SDK module：sdk.computerUse.{browse,screenshot,fillForm}，底层 src/sdk/safari-browser.ts（AppleScript + Safari 登录态）",
+            "HTTP 路由 /api/sdk/computer-use/*；polarclaw-project-sdk 远程调用，宿主无需安装 Chromium",
+            "输出为 page_text + data/screenshots/cu-*.txt 文本快照（非 PNG）",
+            "仅 macOS；Safari 需开启 Allow JavaScript from Apple Events",
+            "可选 VLM analyze 走 PolarPrivate / Ollama",
+            "已废弃：Stagehand、Playwright、Dockerfile.browser、bb-browser Chrome CDP、OpenCLI Browser Bridge"
           ],
           "evidence": [
             "2026-05-05: systemPrompt 强化 + compatFetch 思维块/代码块双重剥离",

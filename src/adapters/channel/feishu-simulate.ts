@@ -43,7 +43,7 @@ function parseArgs(): SimulateArgs {
     console.error('  --user   用户 ID（模拟飞书 open_id）');
     console.error('  --chat   会话 ID（模拟飞书 chat_id）');
     console.error('  --text   消息文本');
-    console.error('  --bot    Bot 类型: admin | girlfriend（默认 admin）');
+    console.error('  --bot    Bot 类型: admin | rr（默认 admin）');
     process.exit(1);
   }
 

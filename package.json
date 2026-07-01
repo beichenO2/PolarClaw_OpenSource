@@ -9,6 +9,7 @@
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
     "test": "vitest run",
+    "test:conv-isolation:live": "node scripts/test-conv-isolation.mjs",
     "test:watch": "vitest",
     "feishu:simulate": "tsx src/adapters/channel/feishu-simulate.ts",
     "lint": "eslint src/",

@@ -14,10 +14,12 @@ import { createLLMRouter } from './adapters/llm/llm-router.js';
 import { createToolExecutor } from './adapters/tools/tool-executor.js';
 import { createPrivacyGateway } from './adapters/privacy/privacy-gateway.js';
 import { loadSecretsToEnv } from './adapters/privacy/secrets-loader.js';
+import { loadFeishuEnvFromPolarPrivate } from './adapters/privacy/feishu-env-bootstrap.js';
 import { createFeishuAdapter } from './adapters/channel/feishu.js';
 import type { IFeishuChannelAdapter } from './adapters/channel/feishu.js';
 import { loadFeishuConfig, validateFeishuEnv } from './adapters/channel/feishu-config.js';
 import { createFeishuDedup } from './adapters/channel/feishu-dedup.js';
+import { isTaociTrigger, tryTaociRoute } from './adapters/channel/taoci-route.js';
 import { createCLIAdapter } from './adapters/channel/cli.js';
 import { createContextCompressor } from './adapters/compression/summarizer.js';
 import { createSkillRegistry } from './adapters/skills/skill-registry.js';
@@ -65,6 +67,10 @@ async function main() {
     baseUrl: process.env.POLARPRIVATE_URL?.trim() || 'http://127.0.0.1:12790',
     projectName: 'PolarClaw',
   });
+
+  await loadFeishuEnvFromPolarPrivate(
+    process.env.POLARPRIVATE_URL?.trim() || 'http://127.0.0.1:12790',
+  );
 
   const config = loadConfig();
 
@@ -511,9 +517,38 @@ async function main() {
   const userLocks = new Map<string, Promise<unknown>>();
   const lastAssistantReply = new Map<string, string>();
 
-  async function handleChannelMessage(msg: { channel: string; userId: string; text: string }) {
+  async function handleChannelMessage(msg: { channel: string; userId: string; text: string; metadata?: Record<string, unknown> }) {
     const convId = `${msg.channel}:${msg.userId}`;
     console.error(`[handleChannelMessage] start: convId=${convId}`);
+
+    if (msg.channel === 'feishu:rr' && isTaociTrigger(msg.text)) {
+      const home = process.env.HOME ?? '~';
+      const polarUiRoot = join(home, 'Polarisor', 'PolarUI');
+      const taoci = tryTaociRoute({
+        channel: msg.channel,
+        userId: msg.userId,
+        text: msg.text,
+        openId: typeof msg.metadata?.openId === 'string' ? msg.metadata.openId : msg.userId,
+        polarUiRoot,
+      });
+      if (taoci.routed) {
+        if (taoci.pdfPath && typeof msg.metadata?.openId === 'string') {
+          try {
+            const bridge = join(polarUiRoot, 'workflows', 'taoci-outreach', 'feishu', 'bridge.mjs');
+            const { sendFeishuReply } = await import(bridge);
+            await sendFeishuReply({
+              openId: msg.metadata.openId,
+              pdfPath: taoci.pdfPath,
+              botName: 'PolarClaw_Rr',
+            });
+          } catch (err) {
+            console.error('[PolarClaw][@套辞] PDF 回传失败:', err);
+          }
+        }
+        return taoci.reply ?? '处理完成';
+      }
+    }
+
     const possibleCorrection = maybeCorrecting(msg.text);
     const prevReply = lastAssistantReply.get(convId) ?? '';
 
@@ -890,11 +925,11 @@ async function main() {
   };
   interface PolarClawChannelStatus {
     feishu_admin: FeishuChannelStatus;
-    feishu_girlfriend: FeishuChannelStatus;
+    feishu_rr: FeishuChannelStatus;
   }
   const channelStatus: PolarClawChannelStatus = {
     feishu_admin: { code: 'config_disabled', ts: new Date().toISOString() },
-    feishu_girlfriend: { code: 'config_disabled', ts: new Date().toISOString() },
+    feishu_rr: { code: 'config_disabled', ts: new Date().toISOString() },
   };
   (globalThis as Record<string, unknown>).__polarClawChannelStatus = channelStatus;
 
@@ -954,36 +989,36 @@ async function main() {
       console.error(`[PolarClaw] 飞书管理员 Bot 启动失败 [${code}]:`, err);
     }
 
-    // ── 女友 Bot ─────────────────────────────────────────────────
-    if (process.env.FEISHU_GIRLFRIEND_APP_ID) {
-      const gfPreFlight = validateFeishuEnv('FEISHU_GIRLFRIEND');
-      if (gfPreFlight.missing.length > 0) {
-        console.error(`[PolarClaw][Feishu] pre-flight FEISHU_GIRLFRIEND: 缺少 env: [${gfPreFlight.missing.join(', ')}]`);
+    // ── PolarClaw_Rr Bot（feishu.rr / @套辞）────────────────────────
+    if (process.env.FEISHU_RR_APP_ID) {
+      const rrPreFlight = validateFeishuEnv('FEISHU_RR');
+      if (rrPreFlight.missing.length > 0) {
+        console.error(`[PolarClaw][Feishu] pre-flight FEISHU_RR: 缺少 env: [${rrPreFlight.missing.join(', ')}]`);
       }
-      if (gfPreFlight.present.length > 0) {
-        console.error(`[PolarClaw][Feishu] pre-flight FEISHU_GIRLFRIEND: 已就位 env: [${gfPreFlight.present.join(', ')}]`);
+      if (rrPreFlight.present.length > 0) {
+        console.error(`[PolarClaw][Feishu] pre-flight FEISHU_RR: 已就位 env: [${rrPreFlight.present.join(', ')}]`);
       }
 
       try {
-        const gfConfig = loadFeishuConfig('FEISHU_GIRLFRIEND');
-        const gfDedup = createFeishuDedup(feishuDataDir, 'feishu-girlfriend');
-        const feishuGf = createFeishuAdapter({
-          config: gfConfig,
+        const rrConfig = loadFeishuConfig('FEISHU_RR');
+        const rrDedup = createFeishuDedup(feishuDataDir, 'feishu-rr');
+        const feishuRr = createFeishuAdapter({
+          config: rrConfig,
           transport: (process.env.FEISHU_TRANSPORT as 'websocket' | 'webhook') || 'websocket',
-          channelName: 'feishu:girlfriend',
-          dedup: gfDedup,
+          channelName: 'feishu:rr',
+          dedup: rrDedup,
           debounceMs,
           fileReceiveRoot,
           resolveUser,
         });
-        feishuGf.onMessage(async (msg) => handleChannelMessage(msg));
-        await feishuGf.start();
-        channels.push(feishuGf);
-        channelStatus.feishu_girlfriend = { code: 'online', ts: new Date().toISOString(), adapter: feishuGf };
-        console.error('[PolarClaw] 飞书女友 Bot 已连接');
+        feishuRr.onMessage(async (msg) => handleChannelMessage(msg));
+        await feishuRr.start();
+        channels.push(feishuRr);
+        channelStatus.feishu_rr = { code: 'online', ts: new Date().toISOString(), adapter: feishuRr };
+        console.error('[PolarClaw] 飞书 PolarClaw_Rr Bot 已连接（feishu.rr / @套辞 路由）');
 
-        feishuGf.catchUp?.().catch((err: unknown) =>
-          console.error('[PolarClaw] 女友 Bot 补漏失败:', err));
+        feishuRr.catchUp?.().catch((err: unknown) =>
+          console.error('[PolarClaw] PolarClaw_Rr Bot 补漏失败:', err));
       } catch (err: unknown) {
         const errMsg = err instanceof Error ? err.message : String(err);
         let code: FeishuChannelStatus['code'] = 'unknown';
@@ -994,8 +1029,8 @@ async function main() {
         } else if (/401|403|invalid_app|invalid_token/i.test(errMsg)) {
           code = 'auth_failed';
         }
-        channelStatus.feishu_girlfriend = { code, message: errMsg, ts: new Date().toISOString() };
-        console.error(`[PolarClaw] 飞书女友 Bot 启动失败 [${code}]:`, err);
+        channelStatus.feishu_rr = { code, message: errMsg, ts: new Date().toISOString() };
+        console.error(`[PolarClaw] 飞书 PolarClaw_Rr Bot 启动失败 [${code}]:`, err);
       }
     }
   }

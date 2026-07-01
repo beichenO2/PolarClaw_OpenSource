@@ -1,5 +1,50 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { createAgent, type IAgentDeps, type IAgentConfig } from '../core/agent.js';
+import type { IChatMessage } from '../ports/memory.js';
+
+const SIMPLE_CONTRACT_JSON = JSON.stringify({
+  constraints: [],
+  steps: [{ description: '直接回答用户', dependsOn: [] }],
+  artifacts: [],
+});
+
+/** TaskContract 提取会额外占用一次 llm.chat；测试里先返回简单契约 JSON。 */
+function withContractExtraction(
+  runLoopImpl: (msgs: IChatMessage[], callIndex: number) => unknown,
+) {
+  let runLoopCalls = 0;
+  return vi.fn().mockImplementation((msgs: IChatMessage[]) => {
+    const system = msgs[0]?.content ?? '';
+    if (typeof system === 'string' && system.includes('任务分析器')) {
+      return Promise.resolve({
+        content: SIMPLE_CONTRACT_JSON,
+        toolCalls: [],
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      });
+    }
+    runLoopCalls++;
+    return Promise.resolve(runLoopImpl(msgs, runLoopCalls));
+  });
+}
+
+function findRunLoopSystemMessage(chatMock: ReturnType<typeof vi.fn>) {
+  for (const call of chatMock.mock.calls) {
+    const msgs = call[0] as IChatMessage[];
+    const system = msgs[0]?.content ?? '';
+    if (typeof system === 'string' && system.includes('You are a test agent')) {
+      return system;
+    }
+  }
+  return '';
+}
+
+function countRunLoopCalls(chatMock: ReturnType<typeof vi.fn>): number {
+  return chatMock.mock.calls.filter((call) => {
+    const msgs = call[0] as IChatMessage[];
+    const system = msgs[0]?.content ?? '';
+    return typeof system === 'string' && system.includes('You are a test agent');
+  }).length;
+}
 
 function makeConfig(overrides: Partial<IAgentConfig> = {}): IAgentConfig {
   return {
@@ -90,18 +135,15 @@ describe('createAgent', () => {
     });
     const agent = createAgent(makeConfig(), deps);
     await agent.handleMessage('cli', 'user1', 'followup');
-    const chatCalls = (deps.llm.chat as any).mock.calls;
-    const systemMsg = chatCalls[0][0][0];
-    expect(systemMsg.content).toContain('无需重新自我介绍');
+    const systemContent = findRunLoopSystemMessage(deps.llm.chat as ReturnType<typeof vi.fn>);
+    expect(systemContent).toContain('无需重新自我介绍');
   });
 
   it('executes tool calls and feeds results back', async () => {
-    let callCount = 0;
     const deps = makeDeps({
       llm: {
-        chat: vi.fn().mockImplementation(() => {
-          callCount++;
-          if (callCount === 1) {
+        chat: withContractExtraction((_msgs, callIndex) => {
+          if (callIndex === 1) {
             return {
               content: '',
               toolCalls: [{
@@ -131,14 +173,14 @@ describe('createAgent', () => {
   it('respects maxToolRounds limit', async () => {
     const deps = makeDeps({
       llm: {
-        chat: vi.fn().mockResolvedValue({
+        chat: withContractExtraction(() => ({
           content: '',
           toolCalls: [{
             id: 'tc',
             function: { name: 'loop', arguments: '{}' },
           }],
           usage: { promptTokens: 5, completionTokens: 5, totalTokens: 10 },
-        }),
+        })),
       } as any,
       tools: {
         list: vi.fn().mockReturnValue([]),
@@ -151,16 +193,14 @@ describe('createAgent', () => {
     const agent = createAgent(makeConfig({ maxToolRounds: 2 }), deps);
     const result = await agent.handleMessage('cli', 'user1', 'loop');
     expect(result.text).toContain('工具调用轮数上限');
-    expect(deps.llm.chat).toHaveBeenCalledTimes(2);
+    expect(countRunLoopCalls(deps.llm.chat as ReturnType<typeof vi.fn>)).toBe(2);
   });
 
   it('accumulates token usage across rounds', async () => {
-    let callCount = 0;
     const deps = makeDeps({
       llm: {
-        chat: vi.fn().mockImplementation(() => {
-          callCount++;
-          if (callCount === 1) {
+        chat: withContractExtraction((_msgs, callIndex) => {
+          if (callIndex === 1) {
             return {
               content: '',
               toolCalls: [{ id: 'tc1', function: { name: 't', arguments: '{}' } }],

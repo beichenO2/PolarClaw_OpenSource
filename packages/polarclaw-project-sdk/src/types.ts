@@ -127,7 +127,7 @@ export interface SDKClientConfig {
 }
 
 // ─── ComputerUse (sandbox-external browser automation) ─────
-// PolarClaw owns the only Chromium in the ecosystem. Other projects
+// PolarClaw owns Safari-based browser automation on macOS. Other projects
 // route browser automation through these calls so their own host
 // desktop is never touched and they need no playwright install.
 

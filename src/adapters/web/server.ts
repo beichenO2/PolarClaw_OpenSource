@@ -1056,7 +1056,7 @@ document.getElementById('send').onclick=async()=>{
 
     // ── ComputerUse (sandbox-external browser automation) ──
     // Other Polarisor projects route their browser automation here so
-    // Chromium only ever runs inside PolarClaw's sandbox. The X-PolarClaw-Project
+    // Safari-backed ComputerUse — no Chromium. PolarClaw SDK exposes /api/sdk/computer-use/*.
     // header (set by polarclaw-project-sdk) is the calling project ID.
 
     app.post('/api/sdk/computer-use/browse', async (req, res) => {
