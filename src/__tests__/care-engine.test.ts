@@ -406,8 +406,8 @@ describe('createCareEngine', () => {
   });
 
   it('inactivity care respects hour-of-day guard (night)', async () => {
-    // Use a time that is actually nighttime in local timezone (23:00 local = 15:00 UTC for UTC+8)
-    vi.useFakeTimers({ now: new Date('2026-04-15T23:00:00+08:00') });
+    // Use UTC so getHours() is 23 regardless of runner timezone (CI uses UTC; matches beforeEach)
+    vi.useFakeTimers({ now: new Date('2026-04-15T23:00:00Z') });
 
     const fiveHoursAgo = new Date(Date.now() - 5 * 3600000).toISOString();
     const onCareMessage = vi.fn();
