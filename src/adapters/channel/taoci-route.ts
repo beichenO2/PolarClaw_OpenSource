@@ -1,5 +1,5 @@
 /**
- * @套辞 路由 — 飞书消息 → PolarUI taoci harness
+ * @套辞 路由 — 飞书消息 → PolarUI graph engine
  */
 
 import { spawnSync } from 'node:child_process';
@@ -36,15 +36,20 @@ export interface ITaociRouteResult {
   pdfPath?: string | null;
 }
 
-/** 调用 PolarUI harness（同步 spawn，供 PolarClaw 通道使用） */
-export function runTaociHarness(
+/** 调 PolarUI graph engine（executeGraph via lib/run-graph-cli.mjs） */
+export function runTaociGraphEngine(
   polarUiRoot: string,
   conversationId: string,
   message: string,
   files: string[] = [],
 ): Record<string, unknown> {
-  const harness = join(polarUiRoot, 'workflows', 'taoci-outreach', 'harness', 'index.mjs');
-  const args = [harness, '--conversation-id', conversationId, '--message', message];
+  const cli = join(polarUiRoot, 'lib', 'run-graph-cli.mjs');
+  const args = [
+    cli,
+    '--workflow', 'taoci-outreach',
+    '--conversation-id', conversationId,
+    '--message', message,
+  ];
   if (files.length) args.push('--files', files.join(','));
 
   const r = spawnSync('node', args, {
@@ -59,9 +64,12 @@ export function runTaociHarness(
   try {
     return JSON.parse(lastLine) as Record<string, unknown>;
   } catch {
-    return { ok: false, error: r.stderr || stdout || 'harness parse error' };
+    return { ok: false, error: r.stderr || stdout || 'graph engine parse error' };
   }
 }
+
+/** @deprecated alias */
+export const runTaociHarness = runTaociGraphEngine;
 
 export function tryTaociRoute(input: ITaociRouteInput): ITaociRouteResult {
   if (!isTaociTrigger(input.text)) {
@@ -74,8 +82,8 @@ export function tryTaociRoute(input: ITaociRouteInput): ITaociRouteResult {
   const convId = buildTaociConversationId(input.channel, openId);
   const message = stripTaociTrigger(input.text) || input.text;
 
-  const result = runTaociHarness(polarUiRoot, convId, message, input.files ?? []);
-  const reply = String(result.reply ?? result.error ?? '处理完成');
+  const result = runTaociGraphEngine(polarUiRoot, convId, message, input.files ?? []);
+  const reply = String(result.reply ?? result.error ?? result.content ?? '处理完成');
   const pdfPath = (result.pdf_path as string | null | undefined) ?? null;
 
   return { routed: true, reply, pdfPath };
