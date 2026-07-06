@@ -56,7 +56,7 @@ export function runTaociGraphEngine(
     cwd: polarUiRoot,
     encoding: 'utf8',
     timeout: 300_000,
-    env: { ...process.env, TAOCI_USE_CLAUDE_CLI: '0' },
+    env: { ...process.env },
   });
 
   const stdout = (r.stdout ?? '').trim();
