@@ -811,7 +811,7 @@
     "install_command": "npm ci",
     "start_command": "npm start",
     "restart_command": "bash Start/start.sh",
-    "health_endpoint": "http://127.0.0.1:3000/api/health"
+    "health_endpoint": "http://127.0.0.1:3910/api/status"
   },
   "depends_on": [
     "SOTAgent/sdk-port",

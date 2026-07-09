@@ -59,10 +59,10 @@ export async function fetchEcosystemHealth(
   opts: FetchEcosystemHealthOptions = {},
 ): Promise<EcosystemHealth> {
   const {
-    hubUrl = process.env.HUB_WEB_URL?.trim() || 'http://127.0.0.1:8765',
+    hubUrl = process.env.HUB_WEB_URL?.trim() || 'http://127.0.0.1:8040',
     polarpilotUrl = process.env.POLARPILOT_URL?.trim() || 'http://127.0.0.1:4900',
     polarprivateUrl = process.env.POLARPRIVATE_URL?.trim() || 'http://127.0.0.1:12790',
-    sotagentUrl = process.env.SOTAGENT_URL?.trim() || 'http://127.0.0.1:12780',
+    sotagentUrl = process.env.SOTAGENT_URL?.trim() || 'http://127.0.0.1:4800',
     hubAgentId,
     polarclawStatus,
     perCheckTimeoutMs = 1500,

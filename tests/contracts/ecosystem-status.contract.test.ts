@@ -75,7 +75,7 @@ describe('contract: /api/ecosystem/status (fetchEcosystemHealth)', () => {
 
   it('polarprivate and sotagent both fail — ok:false with errors', async () => {
     mockFetch(async (url) => {
-      if (url.includes('12790') || url.includes('12780')) {
+      if (url.includes('12790') || url.includes('4800')) {
         return makeResponse(503, { error: 'unavailable' });
       }
       return makeResponse(200, { healthy: true });
@@ -138,9 +138,9 @@ describe('contract: /api/ecosystem/status (fetchEcosystemHealth)', () => {
   it('mixed: 2 succeed, 2 fail, polarclaw injected — correct ok flags', async () => {
     mockFetch(async (url) => {
       if (url.includes('4900')) return makeResponse(200, { healthy: true });
-      if (url.includes('8765')) return makeResponse(200, { status: 'ok' });
+      if (url.includes('8040')) return makeResponse(200, { status: 'ok' });
       if (url.includes('12790')) return makeResponse(503, {});
-      if (url.includes('12780')) throw new Error('connection refused');
+      if (url.includes('4800')) throw new Error('connection refused');
       return makeResponse(200, {});
     });
 

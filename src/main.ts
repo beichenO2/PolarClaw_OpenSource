@@ -719,7 +719,7 @@ async function main() {
   console.error(`[PolarClaw] 学习系统: ${learningTools.length} 工具已注册`);
 
   // Hub Web 注册（可选，通过环境变量启用）
-  const hubUrl = process.env.HUB_WEB_URL?.trim() || 'http://127.0.0.1:8765';
+  const hubUrl = process.env.HUB_WEB_URL?.trim() || 'http://127.0.0.1:8040';
 
   // hub-web 模式：由 Hub Web spawn，需要建立 SSE 长连接并等待用户指令
   // 此模式下 Agent 只通过 Hub Web 交互，不启动其他通道

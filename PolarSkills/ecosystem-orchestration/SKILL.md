@@ -3,7 +3,7 @@ name: ecosystem-orchestration
 description: 生态融合编排 — 统一 digist（信息采集）+ KnowLever（知识编译）+ PolarClaw（Agent 交互）的跨项目工作流
 version: 1.0.0
 requires:
-  digist-api: "http://127.0.0.1:4880"
+  digist-api: "http://127.0.0.1:3800"
   knowlever-dir: "~/Polarisor/KnowLever"
 ---
 
@@ -33,6 +33,6 @@ requires:
 
 ## 依赖
 
-- digist API 运行在 :4880（或通过 port-sdk 发现）
+- digist API 运行在 :3800（或通过 PolarPort 发现）
 - KnowLever 存在于 ~/Polarisor/KnowLever/（或 KNOWLEVER_DIR）
-- SOTAgent port-sdk 运行在 :4800（可选，用于端口发现）
+- PolarPort 运行在 :11050（端口权威；SOTAgent API :4800 仅为控制台门面）

@@ -7,7 +7,7 @@ describe('R5: Hub Web 集成 (hub-client)', () => {
   let client: HubClient;
 
   beforeEach(() => {
-    client = new HubClient('http://localhost:8765');
+    client = new HubClient('http://localhost:8040');
     // Stub connectSSE to prevent real EventSource creation
     vi.spyOn(client as any, 'connectSSE').mockImplementation(() => {});
   });
@@ -33,11 +33,11 @@ describe('R5: Hub Web 集成 (hub-client)', () => {
   it('register sends POST to hub and returns AgentInfo', async () => {
     globalThis.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({ agent_id: 'test-agent-123', hub_port: 8765 }),
+      json: () => Promise.resolve({ agent_id: 'test-agent-123', hub_port: 8040 }),
     });
 
     const info = await client.register({
-      hubUrl: 'http://localhost:8765',
+      hubUrl: 'http://localhost:8040',
       agentType: 'polarclaw',
       mainModel: 'glm-5.1',
       subagentModel: 'qwen-3.6-plus',
@@ -54,7 +54,7 @@ describe('R5: Hub Web 集成 (hub-client)', () => {
     });
 
     await expect(client.register({
-      hubUrl: 'http://localhost:8765',
+      hubUrl: 'http://localhost:8040',
       agentType: 'polarclaw',
       mainModel: 'glm-5.1',
       subagentModel: 'qwen-3.6-plus',
@@ -69,12 +69,12 @@ describe('R5: Hub Web 集成 (hub-client)', () => {
     globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ agent_id: 'test-agent', hub_port: 8765 }),
+        json: () => Promise.resolve({ agent_id: 'test-agent', hub_port: 8040 }),
       })
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
 
     await client.register({
-      hubUrl: 'http://localhost:8765',
+      hubUrl: 'http://localhost:8040',
       agentType: 'polarclaw',
       mainModel: 'glm-5.1',
       subagentModel: 'qwen-3.6-plus',
