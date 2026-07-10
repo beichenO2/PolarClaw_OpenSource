@@ -1,7 +1,7 @@
 # Polarisor 生态全景（自动生成）
 
 > 本文件由 `ssot-soul-aggregate.sh` 自动从各项目 PolarSoul.md 聚合生成。
-> 生成时间：2026-07-09 09:05
+> 生成时间：2026-07-10 09:05
 > 不要手动编辑——修改各项目的 PolarSoul.md 即可。
 
 ---
@@ -25,6 +25,10 @@
 ## Clock
 - **状态**: active
 - **定位**: 番茄钟时间管理系统：番茄钟 + 任务管理 + 统计分析 + 日程习惯 + 成就系统 + 信息消费工作台（Feed）+ 国际象棋休息，React + FastAPI 全栈 PWA 应用
+
+## AutoOffice
+- **状态**: active
+- **定位**: 多格式自动化报告生成平台（PPT、PDF、Word、LaTeX、LaTeX-PDF、HTML），含去AI化、摘要、RAG 增强、质量分析
 
 ## KnowLever
 - **状态**: active
