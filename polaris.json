@@ -192,11 +192,13 @@
           "description": "间隔规则（30m/2h 式）+ 不活跃触发",
           "status": "done",
           "behavior": [
-            "间隔规则（30m/2h 式）+ 不活跃触发"
+            "间隔规则（30m/2h 式）+ 不活跃触发",
+            "空闲话题素材（灰度）：配置 knowLeverTopic 时走 KnowLever POST /api/search/v2（vector:false 控时延），失败/未配置回退旧 GET /api/search 并保持静默降级"
           ],
           "test_status": "passed",
           "evidence": [
-            "2026-05-13: tests added/extended in src/__tests__/"
+            "2026-05-13: tests added/extended in src/__tests__/",
+            "2026-07-13: care-engine.test.ts 23/23 通过 + tsc --noEmit 干净（search/v2 灰度接入，默认 off）"
           ]
         },
         {

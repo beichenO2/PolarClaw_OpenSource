@@ -33,6 +33,8 @@ export interface ICareEngineConfig {
   longWorkTopicThresholdMs?: number;
   /** KnowLever API URL（可选，用于获取新知识作为话题素材） */
   knowLeverUrl?: string;
+  /** KnowLever 检索 v2 的 substrate topic（灰度开关：设置后走 POST /api/search/v2，未设置维持旧 GET 行为） */
+  knowLeverTopic?: string;
 }
 
 export interface ICareEngineDeps {
@@ -186,6 +188,22 @@ export function createCareEngine(
 
   async function fetchKnowLeverTopic(): Promise<{ topic: string; source: string } | null> {
     if (!config.knowLeverUrl) return null;
+    // 灰度 v2：配置了 knowLeverTopic 才走检索 v2（vector:false 避免嵌入延迟，关怀话题对时延敏感）
+    if (config.knowLeverTopic) {
+      try {
+        const res = await fetch(`${config.knowLeverUrl}/api/search/v2`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: '最近值得聊的新知识', topic: config.knowLeverTopic, top: 1, vector: false }),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (res.ok) {
+          const data = await res.json() as { results?: { title?: string; slug?: string }[] };
+          const top = data.results?.[0];
+          if (top?.title) return { topic: top.title, source: top.slug ?? 'KnowLever' };
+        }
+      } catch { /* v2 不可用 → 落回旧路径 */ }
+    }
     try {
       const res = await fetch(`${config.knowLeverUrl}/api/search?q=*&limit=1&sort=created_desc`, {
         signal: AbortSignal.timeout(5000),
