@@ -2,7 +2,7 @@
   "name": "PolarClaw",
   "_meta": {
     "schema_version": "1.0",
-    "last_synced_at": "2026-06-12T12:00:00+08:00"
+    "last_synced_at": "2026-07-16T23:40:00+08:00"
   },
   "description": "PolarClaw — 个人 AI Agent 融合平台（端口-适配器架构）：多通道交互、LLM 工具调用、隐私网关、YOLO 自主模式。",
   "tier": "app",
@@ -798,6 +798,42 @@
         }
       ],
       "blockers": []
+    },
+    {
+      "id": "R9",
+      "need": "运行时统一由 PolarProcess 与 PolarPort 治理",
+      "feature": "runtime_governance",
+      "status": "done",
+      "approach": "PolarProcess 是 polarclaw 唯一进程生命周期权威；PolarPort 是 3910 的唯一端口权威；Start/start.sh 仅作为 PolarProcess 执行的前台命令。",
+      "baseline": {
+        "captured_at": "2026-07-16T23:30:00+08:00",
+        "governance_audit": "drift=1: missing root Start launcher",
+        "live_service": "launchd com.polarclaw.web owned PID 20539 on 127.0.0.1:3910",
+        "polarprocess": "polarclaw merely adopted PID 20539; command npm start; no health check",
+        "polarport": "no active PolarClaw owner",
+        "verification": "Node 20.20.2; 35 test files / 313 tests passed; typecheck and root build passed",
+        "preserved_user_changes": [
+          "PolarSkills/SOUL.md"
+        ]
+      },
+      "behavior": [
+        "PolarProcess service polarclaw is the only start, stop and restart authority",
+        "PolarPort claim polarclaw/PolarClaw is the only owner of port 3910",
+        "Start/start.sh validates Node 20, native dependencies and build artifacts before a foreground exec",
+        "Application startup requires POLAR_RUNTIME_MANAGED=1 and injected PORT=3910",
+        "Health is verified at http://127.0.0.1:3910/api/status"
+      ],
+      "evidence": [
+        "2026-07-16: runtime governance design and implementation plan added",
+        "2026-07-16: runtime guard and static launcher/registration tests passed",
+        "2026-07-16: 37 test files / 320 tests, typecheck, root build and Web build passed",
+        "2026-07-16: migrated preferred reservation PolarClaw/polarclaw-web:3910 to PolarClaw/polarclaw:3910",
+        "2026-07-16: retired only launchd com.polarclaw.web and removed its unloaded plist",
+        "2026-07-16: PolarProcess PID 47140 and PolarPort active owner polarclaw verified on 3910; /api/status healthy",
+        "2026-07-16: fresh completion gate passed: 37 files / 320 tests, typecheck, root and Web builds, compliant audit, one listener and one active owner"
+      ],
+      "test_status": "passed",
+      "blockers": []
     }
   ],
   "tech": {
@@ -811,9 +847,15 @@
   },
   "service_management": {
     "install_command": "npm ci",
-    "start_command": "npm start",
+    "service_id": "polarclaw",
+    "start_command": "bash Start/start.sh",
     "restart_command": "bash Start/start.sh",
-    "health_endpoint": "http://127.0.0.1:3910/api/status"
+    "health_endpoint": "http://127.0.0.1:3910/api/status",
+    "preferred_port": 3910,
+    "auto_start": true,
+    "process_mode": "foreground_command",
+    "process_authority": "PolarProcess",
+    "port_authority": "PolarPort"
   },
   "depends_on": [
     "SOTAgent/sdk-port",

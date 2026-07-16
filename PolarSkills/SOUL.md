@@ -1,7 +1,7 @@
 # Polarisor 生态全景（自动生成）
 
 > 本文件由 `ssot-soul-aggregate.sh` 自动从各项目 PolarSoul.md 聚合生成。
-> 生成时间：2026-07-15 09:05
+> 生成时间：2026-07-16 09:05
 > 不要手动编辑——修改各项目的 PolarSoul.md 即可。
 
 ---
@@ -32,7 +32,7 @@
 
 ## KnowLever
 - **状态**: active
-- **定位**: 知识编译与检索，PolarClaw 的知识子系统
+- **定位**: KnowLever 是 Polarisor 生态的 LLM-Wiki 知识底座。
 
 ## digist
 - **状态**: active

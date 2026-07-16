@@ -145,9 +145,17 @@ web/                # Agent Web 界面（React + Tailwind）
 
 ```bash
 cp .env.example .env    # 填入 PolarPrivate URL（默认 localhost:12790）
-npm install
-npm run dev             # 启动 Agent（首选端口 3910）
+npm ci
+npm run build
+cd web && npm ci && npm run build && cd ..
+bash scripts/register-runtime.sh finalize
+curl -fsS -X POST http://127.0.0.1:11055/api/services/polarclaw/start
 ```
+
+PolarProcess（`127.0.0.1:11055`）是唯一进程生命周期权威，PolarPort
+（`127.0.0.1:11050`）是唯一端口权威。不要用 `npm start`、`npm run dev`、
+launchd、后台 `&` 或 PID 文件启动常驻服务；停止和重启同样只调用 PolarProcess
+的精确 `polarclaw` 服务接口。
 
 ## 生态依赖
 

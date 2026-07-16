@@ -42,6 +42,7 @@ import { createPolarClawSDK } from './sdk/index.js';
 import { HubClient, HubPromptTimeoutError, HubPromptInvalidError, HubNetworkError } from './adapters/web/hub-client.js';
 import { SessionMemoryManager } from './memory/SessionMemory.js';
 import type { IChannelAdapter } from './ports/channel.js';
+import { resolveManagedPort } from './runtime-governance.js';
 
 async function main() {
   // 先加载 .env（确保 POLARPRIVATE_URL 等基础配置可用）
@@ -848,18 +849,8 @@ async function main() {
   // 以下代码只在非 hub-web 模式下执行
   let hubClient: HubClient | null = null;
 
-  // Web 服务器（Review API + SPA + YOLO API）— 端口通过 PolarPort SDK 申请
-  let webPort = parseInt(process.env.PORT || '3910', 10);
-  try {
-    const { createRequire } = await import('node:module');
-    const { resolve, dirname } = await import('node:path');
-    const _req = createRequire(import.meta.url);
-    const sdkPath = resolve(dirname(new URL(import.meta.url).pathname), '..', '..', 'PolarPort', 'dist', 'sdk', 'index.js');
-    const { claimPort } = _req(sdkPath);
-    webPort = await claimPort({ service: 'polarclaw-web', project: 'PolarClaw', preferred: webPort });
-  } catch {
-    console.warn(`[PolarClaw] PolarPort SDK 不可用，使用 fallback 端口 ${webPort}`);
-  }
+  // Web 服务器（Review API + SPA + YOLO API）— 端口只接受治理 launcher 注入。
+  const webPort = resolveManagedPort(process.env);
   // PolarClaw SDK — thin adapters calling PolarPilot contract endpoints
   const polarClawSDK = createPolarClawSDK({
     userRegistry: polarUsers,
