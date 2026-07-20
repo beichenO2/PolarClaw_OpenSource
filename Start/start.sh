@@ -23,10 +23,11 @@ if [ ! -f "$PROJECT_DIR/dist/main.js" ] || [ ! -f "$PROJECT_DIR/web/dist/index.h
   echo "PolarClaw build artifacts are missing; run root and web builds before start" >&2
   exit 1
 fi
-if ! (cd "$PROJECT_DIR" && "$NODE_BIN" -e "require('better-sqlite3')"); then
-  echo "better-sqlite3 is incompatible with $NODE_BIN; rebuild dependencies before start" >&2
-  exit 1
-fi
+# Constructor-level ABI probe with self-heal: a bare require() does not
+# dlopen the addon and misses NODE_MODULE_VERSION mismatches; the guard
+# rebuilds with this launcher's pinned Node 20 toolchain when needed.
+source "$HOME/Polarisor/Agent_core/scripts/native-abi-guard.sh"
+ensure_native_abi "$PROJECT_DIR" "$NODE_BIN" better-sqlite3 || exit 1
 if ! curl -fsS --max-time 3 "$POLARPORT_URL/api/health" >/dev/null; then
   echo "PolarPort is unavailable; refusing preferred-port fallback" >&2
   exit 1
