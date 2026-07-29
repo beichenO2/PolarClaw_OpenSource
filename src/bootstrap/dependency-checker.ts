@@ -19,18 +19,13 @@ interface DependencyCheckerConfig {
   pollIntervalMs?: number;
 }
 
+// knowlever-rag (v1 :18080) intentionally omitted — archived; do not auto-start.
 const DEFAULT_SERVICES: ServiceDescriptor[] = [
   {
     name: 'PolarMemory',
     serviceId: 'polar-memory',
     healthUrl: 'http://127.0.0.1:3100/health',
     port: 3100,
-  },
-  {
-    name: 'KnowLever RAG',
-    serviceId: 'knowlever-rag',
-    healthUrl: 'http://127.0.0.1:18080/api/health',
-    port: 18080,
   },
   {
     name: 'PolarPilot',

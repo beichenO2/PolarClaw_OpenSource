@@ -6,7 +6,14 @@ requires:
   knowlever-dir: "~/Polarisor/KnowLever"
 ---
 
+> **PAUSED / v1 archived (2026-07-29)**  
+> KnowLever v1 RAG（18080）、`rag.pipeline`、旧 compile/build 契约已归档。本 skill 默认不挂入 `personas/default.md`。  
+> **禁止**为启用本 skill 而拉起 `knowlever-rag`。见 `KnowLever/docs/pause/v1-consumer-shutdown-checklist.md`。
+
 # KnowLever Integration
+
+> **PAUSED (2026-07)** — KnowLever v1 `rag.pipeline` / `wiki-engine/compile.js` / `:18080` 已归档。  
+> 默认 persona 不再加载本 skill。恢复需按 v2 CLI/Reader 契约重新设计，禁止拉起 archived RAG。
 
 ## 能力
 

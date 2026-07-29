@@ -1,5 +1,6 @@
 ---
-allowed_skills: clock-integration,autooffice-integration,knowlever-integration,digist-integration,doc-reader,safe-shell
+# knowlever-integration paused (KnowLever v1 RAG/compile archived 2026-07)
+allowed_skills: clock-integration,autooffice-integration,digist-integration,doc-reader,safe-shell
 ---
 # 默认 Persona
 
