@@ -35,4 +35,4 @@ requires:
 
 - digist API 运行在 :3800（或通过 PolarPort 发现）
 - KnowLever 存在于 ~/Polarisor/KnowLever/（或 KNOWLEVER_DIR）
-- PolarPort 运行在 :11050（端口权威；SOTAgent API :4800 仅为控制台门面）
+- **PolarManager**：PolarPort `:11050`（端口）· PolarProcess `:11055`（启停）· PolarBudget `:11060`（CPU 预算）；SOTAgent console 仅为观测门面
